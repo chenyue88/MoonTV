@@ -35,9 +35,37 @@ export function processImageUrl(originalUrl: string): string {
   if (!originalUrl) return originalUrl;
 
   const proxyUrl = getImageProxyUrl();
-  if (!proxyUrl) return originalUrl;
+  if (proxyUrl) {
+    return `${proxyUrl}${encodeURIComponent(originalUrl)}`;
+  }
 
-  return `${proxyUrl}${encodeURIComponent(originalUrl)}`;
+  // 豆瓣图片 CDN 会拒绝不带 Referer 的浏览器直连（通常返回 418）。
+  // 未配置自定义代理时，自动使用同源代理补上服务端请求头。
+  if (isDoubanImageUrl(originalUrl)) {
+    return `/api/image-proxy?url=${encodeURIComponent(originalUrl)}`;
+  }
+
+  return originalUrl;
+}
+
+/**
+ * 判断 URL 是否来自豆瓣图片 CDN。
+ */
+export function isDoubanImageUrl(imageUrl: string): boolean {
+  try {
+    const { hostname, protocol } = new URL(imageUrl);
+    const normalizedHostname = hostname.toLowerCase();
+
+    return (
+      (protocol === 'http:' || protocol === 'https:') &&
+      (normalizedHostname === 'doubanio.com' ||
+        normalizedHostname.endsWith('.doubanio.com') ||
+        normalizedHostname === 'douban.com' ||
+        normalizedHostname.endsWith('.douban.com'))
+    );
+  } catch {
+    return false;
+  }
 }
 
 /**

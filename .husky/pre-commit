@@ -2,10 +2,11 @@
 . "$(dirname "$0")/_/husky.sh"
 
 # 生成版本号
-pnpm gen:version
+node scripts/generate-version.js
 
 # 自动添加修改的版本文件
 git add src/lib/version.ts
 git add VERSION.txt
 
-npx lint-staged
+# 使用 Windows 原生 PATH 分隔符运行本地 lint-staged 及其子命令
+node -e "const path=require('path');process.env.PATH=path.resolve('node_modules/.bin')+path.delimiter+process.env.PATH;import('./node_modules/lint-staged/bin/lint-staged.js')"
